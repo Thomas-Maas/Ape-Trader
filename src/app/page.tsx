@@ -1,14 +1,25 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import GameView, { type GameViewHandle } from "@/components/GameView";
 import HomeScreen from "@/components/HomeScreen";
+import AuthPanel, { type AuthedUser } from "@/components/AuthPanel";
+import UserBadge from "@/components/UserBadge";
+import Scoreboard from "@/components/Scoreboard";
 
 export default function Home() {
   const [showHome, setShowHome] = useState(true);
+  const [user, setUser] = useState<AuthedUser | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [scoreboardKey, setScoreboardKey] = useState(0);
   const gameRef = useRef<GameViewHandle>(null);
 
-  const handleGameEnd = useCallback(() => {}, []);
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data: { user: AuthedUser | null }) => setUser(data.user))
+      .catch(() => setUser(null));
+  }, []);
 
   const handlePlay = useCallback(() => {
     setShowHome(false);
@@ -17,6 +28,33 @@ export default function Home() {
   const handleGoHome = useCallback(() => {
     gameRef.current?.stop();
     setShowHome(true);
+    setScoreboardKey((k) => k + 1);
+  }, []);
+
+  const handleGameEnd = useCallback(
+    async (finalScore: number) => {
+      if (!user) return;
+      try {
+        const res = await fetch("/api/score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ score: finalScore }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { highscore: number };
+          setUser({ username: user.username, highscore: data.highscore });
+          setScoreboardKey((k) => k + 1);
+        }
+      } catch {
+        // best-effort submission, ignore network errors
+      }
+    },
+    [user],
+  );
+
+  const handleLogout = useCallback(async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
   }, []);
 
   return (
@@ -30,6 +68,14 @@ export default function Home() {
         </button>
       )}
 
+      <div className="absolute right-4 top-4">
+        <UserBadge
+          user={user}
+          onLoginClick={() => setAuthOpen(true)}
+          onLogout={handleLogout}
+        />
+      </div>
+
       <div className="relative w-full max-w-4xl">
         <div
           className={`transition-all duration-300 ${
@@ -39,8 +85,27 @@ export default function Home() {
         >
           <GameView ref={gameRef} onGameEnd={handleGameEnd} />
         </div>
-        {showHome && <HomeScreen onPlay={handlePlay} />}
+
+        {showHome && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black/30 p-6">
+            <HomeScreen onPlay={handlePlay} />
+            <div className="pointer-events-auto z-10 w-full max-w-md">
+              <Scoreboard refreshKey={scoreboardKey} />
+            </div>
+          </div>
+        )}
       </div>
+
+      {authOpen && (
+        <AuthPanel
+          onAuth={(u) => {
+            setUser(u);
+            setAuthOpen(false);
+            setScoreboardKey((k) => k + 1);
+          }}
+          onClose={() => setAuthOpen(false)}
+        />
+      )}
     </main>
   );
 }

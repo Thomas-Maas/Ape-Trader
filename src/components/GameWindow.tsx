@@ -29,7 +29,7 @@ export type GameWindowHandle = {
 
 type Props = {
   ref?: Ref<GameWindowHandle>;
-  onGameEnd: () => void;
+  onGameEnd: (finalScore: number) => void;
 };
 
 function pnlFor(position: Position, price: number): number {
@@ -49,7 +49,7 @@ export default function GameWindow({ ref, onGameEnd }: Props) {
   const loopInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeLeftRef = useRef(GAME_DURATION_S);
   const onGameEndRef = useRef(onGameEnd);
-  const closePositionRef = useRef<() => void>(() => {});
+  const closePositionRef = useRef<() => number>(() => 0);
 
   useEffect(() => {
     onGameEndRef.current = onGameEnd;
@@ -77,12 +77,14 @@ export default function GameWindow({ ref, onGameEnd }: Props) {
     [visibleData],
   );
 
-  const closePosition = useCallback(() => {
-    if (!position || visibleData.length === 0) return;
+  const closePosition = useCallback((): number => {
+    if (!position || visibleData.length === 0) return realizedPnL;
     const exitPrice = visibleData[visibleData.length - 1].close;
-    setRealizedPnL((prev) => prev + pnlFor(position, exitPrice));
+    const newTotal = realizedPnL + pnlFor(position, exitPrice);
+    setRealizedPnL(newTotal);
     setPosition(null);
-  }, [position, visibleData]);
+    return newTotal;
+  }, [position, visibleData, realizedPnL]);
 
   useEffect(() => {
     closePositionRef.current = closePosition;
@@ -118,9 +120,9 @@ export default function GameWindow({ ref, onGameEnd }: Props) {
 
       if (updated <= 0) {
         clearLoop();
-        closePositionRef.current();
+        const finalScore = closePositionRef.current();
         setGameState("GAME_OVER");
-        onGameEndRef.current();
+        onGameEndRef.current(finalScore);
       }
     }, DRIP_SPEED_MS);
   }, [clearLoop]);

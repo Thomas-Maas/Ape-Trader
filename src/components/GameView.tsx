@@ -15,7 +15,7 @@ export type GameViewHandle = {
 
 type Props = {
   ref?: Ref<GameViewHandle>;
-  onGameEnd: () => void;
+  onGameEnd: (finalScore: number) => void;
 };
 
 export default function GameView({ ref, onGameEnd }: Props) {

@@ -5,7 +5,7 @@ type Props = {
 
 export default function HomeScreen({ onPlay, label = "Play" }: Props) {
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/30">
+    <div className="flex flex-col items-center gap-4">
       <button
         onClick={onPlay}
         aria-label={label}
