@@ -17,7 +17,7 @@ import TradeControls, {
 } from "./TradeControls";
 
 const DRIP_SPEED_MS = 500;
-const GAME_DURATION_S = 30;
+const GAME_DURATION_S = 35;
 const INITIAL_VISIBLE = 60;
 
 type GameState = "IDLE" | "PLAYING" | "GAME_OVER";
