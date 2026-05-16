@@ -30,6 +30,8 @@ export type GameWindowHandle = {
 type Props = {
   ref?: Ref<GameWindowHandle>;
   onGameEnd: (finalScore: number) => void;
+  onAction?: (action: "LONG" | "SHORT" | "CLOSE") => void;
+  onPnLUpdate?: (realized: number, unrealized: number) => void;
 };
 
 function pnlFor(position: Position, price: number): number {
@@ -38,7 +40,7 @@ function pnlFor(position: Position, price: number): number {
     : position.entryPrice - price;
 }
 
-export default function GameWindow({ ref, onGameEnd }: Props) {
+export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate }: Props) {
   const [gameState, setGameState] = useState<GameState>("IDLE");
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION_S);
   const [visibleData, setVisibleData] = useState<Candle[]>([]);
@@ -49,15 +51,21 @@ export default function GameWindow({ ref, onGameEnd }: Props) {
   const loopInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeLeftRef = useRef(GAME_DURATION_S);
   const onGameEndRef = useRef(onGameEnd);
+  const onActionRef = useRef(onAction);
+  const onPnLUpdateRef = useRef(onPnLUpdate);
   const closePositionRef = useRef<() => number>(() => 0);
 
-  useEffect(() => {
-    onGameEndRef.current = onGameEnd;
-  }, [onGameEnd]);
+  useEffect(() => { onGameEndRef.current = onGameEnd; }, [onGameEnd]);
+  useEffect(() => { onActionRef.current = onAction; }, [onAction]);
+  useEffect(() => { onPnLUpdateRef.current = onPnLUpdate; }, [onPnLUpdate]);
 
   const currentPrice =
     visibleData.length > 0 ? visibleData[visibleData.length - 1].close : 0;
   const unrealizedPnL = position ? pnlFor(position, currentPrice) : 0;
+
+  useEffect(() => {
+    onPnLUpdateRef.current?.(realizedPnL, unrealizedPnL);
+  }, [realizedPnL, unrealizedPnL]);
 
   const clearLoop = useCallback(() => {
     if (loopInterval.current !== null) {
@@ -73,6 +81,7 @@ export default function GameWindow({ ref, onGameEnd }: Props) {
       if (visibleData.length === 0) return;
       const entryPrice = visibleData[visibleData.length - 1].close;
       setPosition({ type, entryPrice });
+      onActionRef.current?.(type);
     },
     [visibleData],
   );
@@ -83,6 +92,7 @@ export default function GameWindow({ ref, onGameEnd }: Props) {
     const newTotal = realizedPnL + pnlFor(position, exitPrice);
     setRealizedPnL(newTotal);
     setPosition(null);
+    onActionRef.current?.("CLOSE");
     return newTotal;
   }, [position, visibleData, realizedPnL]);
 
@@ -120,9 +130,9 @@ export default function GameWindow({ ref, onGameEnd }: Props) {
 
       if (updated <= 0) {
         clearLoop();
-        const finalScore = closePositionRef.current();
+        const score = closePositionRef.current();
         setGameState("GAME_OVER");
-        onGameEndRef.current(finalScore);
+        onGameEndRef.current(score);
       }
     }, DRIP_SPEED_MS);
   }, [clearLoop]);

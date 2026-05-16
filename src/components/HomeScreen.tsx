@@ -69,14 +69,14 @@ export default function HomeScreen({ onPlay, refreshKey = 0 }: Props) {
         </h1>
 
         <div className="flex flex-col items-center gap-2">
-          <span className="text-gray-400 text-sm">Northcrypto&apos;s coin of the week:</span>
+          <span className="text-gray-400 text-xl">Northcrypto&apos;s coin of the week:</span>
           <div className="flex items-center gap-3">
             <span className="text-2xl font-bold text-white">Bitcoin</span>
             <Image
               src="/Bitcoin.svg.svg"
               alt="Bitcoin"
-              width={36}
-              height={36}
+              width={50}
+              height={50}
               className="h-9 w-9"
             />
           </div>
