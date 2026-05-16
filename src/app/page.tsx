@@ -5,7 +5,6 @@ import GameView, { type GameViewHandle } from "@/components/GameView";
 import HomeScreen from "@/components/HomeScreen";
 import AuthPanel, { type AuthedUser } from "@/components/AuthPanel";
 import UserBadge from "@/components/UserBadge";
-import Scoreboard from "@/components/Scoreboard";
 
 export default function Home() {
   const [showHome, setShowHome] = useState(true);
@@ -87,11 +86,8 @@ export default function Home() {
         </div>
 
         {showHome && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black/30 p-6">
-            <HomeScreen onPlay={handlePlay} />
-            <div className="pointer-events-auto z-10 w-full max-w-md">
-              <Scoreboard refreshKey={scoreboardKey} />
-            </div>
+          <div className="fixed inset-0 flex items-center justify-center bg-black/60 px-10 py-8 z-10">
+            <HomeScreen onPlay={handlePlay} refreshKey={scoreboardKey} />
           </div>
         )}
       </div>

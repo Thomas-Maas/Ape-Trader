@@ -1,0 +1,10 @@
+How to play: You get to help Northcrypto's most loyal and loved staff member, Mon(k)ey Man. By pressing long, you start a position at the current value. If the value goes up, you can sell to profit the difference. If it goes down, selling nets you a loss. Shorting the coin does the opposite, where you expect the value to go down. Try to generate as much profit as possible within the given timeframe to secure your place on the leaderboard. Besides that, you will be helping Mon(k)ey man feed himself and his family with something else than instant ramen.
+
+Rules: 
+1. To save your score to the leaderboard, you must create an account before playing.
+2. This version is a demo. Any promises made regarding payment or prizes are demo placeholders and not legally binding.
+
+Title text: Win €100 in this weeks currency by being the scoreboard leader!
+Subtitle text: Northcrypto's coin of the week: Bitcoin {insert btc image here}
+
+{Countdown} Left!
