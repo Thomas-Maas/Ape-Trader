@@ -7,7 +7,7 @@ export type Candle = {
 };
 
 const ENDPOINT =
-  "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1s&limit=150";
+  "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=150";
 
 export async function fetchBtcCandles(): Promise<Candle[]> {
   const res = await fetch(ENDPOINT);
