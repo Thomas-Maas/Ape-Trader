@@ -4,7 +4,7 @@ type Row = { username: string; highscore: string };
 
 export async function GET() {
   const { rows } = await pool.query<Row>(
-    "SELECT username, highscore FROM users ORDER BY highscore DESC LIMIT 20",
+    "SELECT username, highscore FROM users ORDER BY highscore DESC LIMIT 100",
   );
   return Response.json({
     entries: rows.map((r) => ({

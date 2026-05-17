@@ -32,7 +32,7 @@ export default function Scoreboard({ refreshKey = 0 }: Props) {
   }, [refreshKey]);
 
   return (
-    <div className="w-full rounded-lg border border-gray-700 bg-gray-900/80 p-4">
+    <div className="w-full rounded-lg border border-gray-700 bg-gray-950/90 p-4 [scrollbar-color:var(--color-gray-700)_var(--color-gray-900)]">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-gray-400">
         Leaderboard
       </h2>
@@ -43,7 +43,7 @@ export default function Scoreboard({ refreshKey = 0 }: Props) {
           No scores yet — be the first ape.
         </p>
       ) : (
-        <ol className="space-y-1">
+        <ol className="max-h-120 space-y-1 overflow-y-auto pr-1 [scrollbar-color:var(--color-gray-700)_var(--color-gray-900)]">
           {entries.map((e, i) => (
             <li
               key={e.username}
