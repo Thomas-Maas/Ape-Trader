@@ -87,6 +87,7 @@ export default function Home() {
       {authOpen && (
         <AuthPanel
           onAuth={(u) => {
+            gameRef.current?.stop();
             setUser(u);
             setAuthOpen(false);
             setScoreboardKey((k) => k + 1);
