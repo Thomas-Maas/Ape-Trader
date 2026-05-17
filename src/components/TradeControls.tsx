@@ -15,20 +15,20 @@ export default function TradeControls({
   onClose,
 }: Props) {
   return (
-    <div className="flex w-36 flex-col gap-3">
+    <div className="flex w-full gap-3">
       {position === null ? (
         <>
           <button
             onClick={() => onOpen("LONG")}
             disabled={!canOpen}
-            className="rounded-lg bg-green-600 px-4 py-3 font-bold text-white shadow transition hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex-1 rounded-lg border border-green-400 bg-green-600 px-4 py-4 text-lg font-bold text-white shadow transition hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Long
           </button>
           <button
             onClick={() => onOpen("SHORT")}
             disabled={!canOpen}
-            className="rounded-lg bg-red-600 px-4 py-3 font-bold text-white shadow transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex-1 rounded-lg border border-red-400 bg-red-600 px-4 py-4 text-lg font-bold text-white shadow transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Short
           </button>
@@ -36,27 +36,10 @@ export default function TradeControls({
       ) : (
         <button
           onClick={onClose}
-          className="rounded-lg bg-amber-500 px-4 py-3 font-bold text-black shadow transition hover:bg-amber-400"
+          className="w-full rounded-lg border border-yellow-300 bg-yellow-500 px-4 py-4 text-lg font-bold text-black shadow transition hover:bg-yellow-400"
         >
-          Close Position
+          Close
         </button>
-      )}
-
-      {position && (
-        <div className="rounded-lg border border-gray-700 bg-gray-800/60 p-3 text-xs">
-          <div className="text-gray-400">Position</div>
-          <div
-            className={
-              position.type === "LONG" ? "text-green-400" : "text-red-400"
-            }
-          >
-            {position.type}
-          </div>
-          <div className="mt-2 text-gray-400">Entry</div>
-          <div className="font-mono text-white">
-            ${position.entryPrice.toFixed(2)}
-          </div>
-        </div>
       )}
     </div>
   );

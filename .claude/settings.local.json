@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(node -e ' *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(dir \"c:\\\\Users\\\\thoma\\\\OneDrive\\\\Desktop\\\\Projects\\\\apetrader\\\\public\")"
     ]
   }
 }

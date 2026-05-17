@@ -7,7 +7,7 @@ export type GameAction = {
   candleIndex: number;
 };
 
-export function computeScore(candles: Candle[], actions: GameAction[]): number {
+export function computeScore(candles: Candle[], actions: GameAction[], finalCandleIndex: number): number {
   let realized = 0;
   let position: { type: "LONG" | "SHORT"; entryPrice: number } | null = null;
 
@@ -23,6 +23,14 @@ export function computeScore(candles: Candle[], actions: GameAction[]): number {
     } else if (action === "CLOSE" && position) {
       realized += pnlFor(position.type, position.entryPrice, price);
       position = null;
+    }
+  }
+
+  // Auto-close any open position at the final visible candle
+  if (position !== null) {
+    const finalPrice = candles[finalCandleIndex]?.close;
+    if (finalPrice !== undefined) {
+      realized += pnlFor(position.type, position.entryPrice, finalPrice);
     }
   }
 

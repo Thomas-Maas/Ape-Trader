@@ -12,16 +12,15 @@ import type { Candle } from "@/utils/binance";
 import { DRIP_SPEED_MS, GAME_DURATION_S } from "@/lib/gameConfig";
 import CryptoChart from "./CryptoChart";
 import ProfitDisplay from "./ProfitDisplay";
-import TradeControls, {
-  type Position,
-  type PositionType,
-} from "./TradeControls";
+import type { Position, PositionType } from "./TradeControls";
 
 type GameState = "IDLE" | "PLAYING" | "GAME_OVER";
 
 export type GameWindowHandle = {
   startWithCandles: (candles: Candle[]) => void;
   stop: () => void;
+  openPosition: (type: PositionType) => void;
+  closePosition: () => void;
 };
 
 type Props = {
@@ -29,6 +28,7 @@ type Props = {
   onGameEnd: (finalScore: number, highscore: number) => void;
   onAction?: (action: "LONG" | "SHORT" | "CLOSE") => void;
   onPnLUpdate?: (realized: number, unrealized: number) => void;
+  onPositionChange?: (position: Position | null) => void;
   sessionId: string | null;
 };
 
@@ -38,7 +38,7 @@ function pnlFor(position: Position, price: number): number {
     : position.entryPrice - price;
 }
 
-export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sessionId }: Props) {
+export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, onPositionChange, sessionId }: Props) {
   const [gameState, setGameState] = useState<GameState>("IDLE");
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION_S);
   const [visibleData, setVisibleData] = useState<Candle[]>([]);
@@ -54,6 +54,8 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sess
   const visibleDataRef = useRef(visibleData);
   const positionRef = useRef(position);
   const realizedPnLRef = useRef(realizedPnL);
+  // Tracks the server-authoritative candle index of the last visible candle
+  const currentCandleIndexRef = useRef<number>(-1);
 
   useEffect(() => { onGameEndRef.current = onGameEnd; }, [onGameEnd]);
   useEffect(() => { onActionRef.current = onAction; }, [onAction]);
@@ -70,6 +72,8 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sess
   useEffect(() => {
     onPnLUpdateRef.current?.(realizedPnL, unrealizedPnL);
   }, [realizedPnL, unrealizedPnL]);
+
+  useEffect(() => { onPositionChange?.(position); }, [position, onPositionChange]);
 
   const clearLoop = useCallback(() => {
     if (loopInterval.current !== null) {
@@ -93,6 +97,8 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sess
       });
       if (res.ok) {
         const data = (await res.json()) as { score: number; highscore: number };
+        setPosition(null);
+        setRealizedPnL(data.score);
         onGameEndRef.current(data.score, data.highscore);
       }
     } catch {
@@ -111,7 +117,7 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sess
       fetch("/api/game/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: sid, action: type, candleIndex: data.length - 1 }),
+        body: JSON.stringify({ sessionId: sid, action: type, candleIndex: currentCandleIndexRef.current }),
       }).catch(() => undefined);
     }
   }, []);
@@ -130,7 +136,7 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sess
       fetch("/api/game/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: sid, action: "CLOSE", candleIndex: data.length - 1 }),
+        body: JSON.stringify({ sessionId: sid, action: "CLOSE", candleIndex: currentCandleIndexRef.current }),
       }).catch(() => undefined);
     }
   }, []);
@@ -142,6 +148,8 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sess
     setVisibleData(candles);
     setPosition(null);
     setRealizedPnL(0);
+    // Last candle the server sent is at index candles.length - 1
+    currentCandleIndexRef.current = candles.length - 1;
     setGameState("PLAYING");
 
     const tickSeconds = DRIP_SPEED_MS / 1000;
@@ -152,8 +160,9 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sess
         try {
           const res = await fetch(`/api/game/candle?sessionId=${sid}`);
           if (res.ok) {
-            const data = (await res.json()) as { candle: Candle | null };
+            const data = (await res.json()) as { candle: Candle | null; index: number };
             if (data.candle) {
+              currentCandleIndexRef.current = data.index;
               setVisibleData((prev) => [...prev, data.candle!]);
             }
           }
@@ -181,14 +190,12 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sess
 
   useImperativeHandle(
     ref,
-    () => ({ startWithCandles: startGame, stop: stopGame }),
-    [startGame, stopGame],
+    () => ({ startWithCandles: startGame, stop: stopGame, openPosition, closePosition }),
+    [startGame, stopGame, openPosition, closePosition],
   );
 
-  const canOpen = gameState === "PLAYING" && position === null;
-
   return (
-    <div className="space-y-4 rounded-xl border border-gray-700 bg-gray-900/60 p-6 shadow-2xl">
+    <div className="space-y-4 rounded-xl border border-gray-700 bg-gray-900/95 p-6 shadow-2xl">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white">Ape Trader</h1>
         <div className="flex items-center gap-3 font-mono text-sm">
@@ -201,17 +208,7 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sess
 
       <ProfitDisplay realizedPnL={realizedPnL} unrealizedPnL={unrealizedPnL} />
 
-      <div className="flex gap-4">
-        <TradeControls
-          position={position}
-          canOpen={canOpen}
-          onOpen={openPosition}
-          onClose={closePosition}
-        />
-        <div className="flex-1">
-          <CryptoChart data={visibleData} />
-        </div>
-      </div>
+      <CryptoChart data={visibleData} />
     </div>
   );
 }

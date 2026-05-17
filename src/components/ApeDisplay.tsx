@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const HAPPY_THRESHOLD = 50;
-const ANGRY_THRESHOLD = -50;
-const CYCLE_MS = 1300;
+const HAPPY_THRESHOLD = 25;
+const ANGRY_THRESHOLD = -5;
+const CYCLE_MS = 1100;
 const ACTION_MS = 400;
 
 type GameState = "IDLE" | "PLAYING" | "GAME_OVER";

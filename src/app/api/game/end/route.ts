@@ -2,11 +2,13 @@ import { pool } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { computeScore, type GameAction } from "@/lib/game";
 import type { Candle } from "@/utils/binance";
+import { DRIP_SPEED_MS, INITIAL_VISIBLE } from "@/lib/gameConfig";
 
 type SessionRow = {
   user_id: number;
   candles: Candle[];
   actions: GameAction[];
+  started_at: string;
   expires_at: string;
   ended_at: string | null;
 };
@@ -27,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   const { rows } = await pool.query<SessionRow>(
-    `SELECT user_id, candles, actions, expires_at, ended_at
+    `SELECT user_id, candles, actions, started_at, expires_at, ended_at
      FROM game_sessions WHERE id = $1`,
     [sessionId],
   );
@@ -37,8 +39,12 @@ export async function POST(request: Request) {
   if (row.user_id !== session.uid) return Response.json({ error: "Forbidden" }, { status: 403 });
   if (row.ended_at) return Response.json({ error: "Game already ended" }, { status: 400 });
 
-  // Allow ending if game started and either time is up or client calls early
-  const score = computeScore(row.candles, row.actions ?? []);
+  const elapsedMs = Date.now() - new Date(row.started_at).getTime();
+  const finalCandleIndex = Math.min(
+    INITIAL_VISIBLE + Math.floor(elapsedMs / DRIP_SPEED_MS),
+    row.candles.length - 1,
+  );
+  const score = computeScore(row.candles, row.actions ?? [], finalCandleIndex);
 
   const { rows: hsRows } = await pool.query<HighscoreRow>(
     `UPDATE users SET highscore = GREATEST(highscore, $1) WHERE id = $2 RETURNING highscore`,

@@ -45,7 +45,10 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-gray-950 p-6">
+    <main
+      className="relative flex min-h-screen items-center justify-center p-6 bg-gray-950 bg-cover bg-center transition-[background-image]"
+      style={!showHome ? { backgroundImage: "url('/game_view_background.png')" } : undefined}
+    >
       {!showHome && (
         <button
           onClick={handleGoHome}
