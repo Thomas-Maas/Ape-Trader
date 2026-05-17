@@ -195,20 +195,24 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, onPo
   );
 
   return (
-    <div className="space-y-4 rounded-xl border border-gray-700 bg-gray-900/95 p-6 shadow-2xl">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-white">Ape Trader</h1>
-        <div className="flex items-center gap-3 font-mono text-sm">
-          <span className="text-gray-400">State:</span>
-          <span className="text-white">{gameState}</span>
+    <div className="contents lg:block lg:space-y-4 lg:rounded-xl lg:border lg:border-gray-700 lg:bg-gray-900/95 lg:p-6 lg:shadow-2xl">
+      <header className="order-2 flex items-center justify-between rounded-xl border border-gray-700 bg-gray-900/95 px-4 py-2 shadow-2xl lg:order-0 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+        <h1 className="hidden text-xl font-bold text-white lg:block">Ape Trader</h1>
+        <div className="flex w-full items-center justify-center gap-3 font-mono text-sm lg:w-auto lg:justify-end">
+          <span className="hidden text-gray-400 lg:inline">State:</span>
+          <span className="hidden text-white lg:inline">{gameState}</span>
           <span className="text-gray-400">Time:</span>
           <span className="text-white">{timeLeft.toFixed(1)}s</span>
         </div>
       </header>
 
-      <ProfitDisplay realizedPnL={realizedPnL} unrealizedPnL={unrealizedPnL} />
+      <div className="order-3 lg:order-0 lg:contents">
+        <ProfitDisplay realizedPnL={realizedPnL} unrealizedPnL={unrealizedPnL} />
+      </div>
 
-      <CryptoChart data={visibleData} />
+      <div className="order-4 lg:order-0 lg:contents">
+        <CryptoChart data={visibleData} />
+      </div>
     </div>
   );
 }

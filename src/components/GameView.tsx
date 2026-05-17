@@ -82,10 +82,10 @@ export default function GameView({ ref, onGameEnd }: Props) {
   useImperativeHandle(ref, () => ({ stop: handleStop }), [handleStop]);
 
   return (
-    <div className="flex gap-6">
-      {/* Left: big ape + controls + start button */}
-      <div className="flex w-2/5 shrink-0 flex-col gap-4">
-        <div className="rounded-xl border border-gray-700 bg-gray-900/95 p-4 shadow-2xl">
+    <div className="flex flex-col gap-3 lg:flex-row lg:gap-6">
+      {/* Left: big ape + controls + start button (flattened on mobile via `contents`) */}
+      <div className="contents lg:flex lg:w-2/5 lg:shrink-0 lg:flex-col lg:gap-4">
+        <div className="order-1 mx-auto w-1/2 max-w-50 rounded-xl border border-gray-700 bg-gray-900/95 p-3 shadow-2xl lg:order-0 lg:mx-0 lg:w-auto lg:max-w-none lg:p-4">
           <ApeDisplay
             gameState={apeGameState}
             realizedPnL={apePnL.realized}
@@ -94,24 +94,26 @@ export default function GameView({ ref, onGameEnd }: Props) {
             actionTick={actionTick}
           />
         </div>
-        <div className="rounded-xl border border-gray-700 bg-gray-900/95 p-4 shadow-2xl">
-          <TradeControls
-            position={position}
-            canOpen={canOpen}
-            onOpen={(type) => gameWindowRef.current?.openPosition(type)}
-            onClose={() => gameWindowRef.current?.closePosition()}
-          />
+        <div className="contents lg:block lg:rounded-xl lg:border lg:border-gray-700 lg:bg-gray-900/95 lg:p-4 lg:shadow-2xl">
+          <div className="order-5 rounded-xl border border-gray-700 bg-gray-900/95 p-3 shadow-2xl lg:order-0 lg:contents lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+            <TradeControls
+              position={position}
+              canOpen={canOpen}
+              onOpen={(type) => gameWindowRef.current?.openPosition(type)}
+              onClose={() => gameWindowRef.current?.closePosition()}
+            />
+          </div>
           <button
             onClick={handleStart}
-            className="mt-3 w-full rounded-lg bg-yellow-500 px-6 py-2 font-bold text-black shadow transition hover:bg-yellow-400"
+            className="order-6 w-full rounded-lg bg-yellow-500 px-6 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-400 lg:order-0 lg:mt-3 lg:py-2 lg:text-base"
           >
             {hasStarted ? "Play Again" : "Start Game"}
           </button>
         </div>
       </div>
 
-      {/* Right: game window */}
-      <div className="min-w-0 flex-1">
+      {/* Right: game window (flattened on mobile via `contents`) */}
+      <div className="contents lg:block lg:min-w-0 lg:flex-1">
         <GameWindow
           ref={gameWindowRef}
           onGameEnd={handleGameEnd}

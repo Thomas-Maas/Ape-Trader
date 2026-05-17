@@ -46,19 +46,19 @@ export default function Home() {
 
   return (
     <main
-      className="relative flex min-h-screen items-center justify-center p-6 bg-gray-950 bg-cover bg-center transition-[background-image]"
+      className="relative flex min-h-screen items-center justify-center px-3 pt-16 pb-4 bg-gray-950 bg-cover bg-center transition-[background-image] sm:p-6"
       style={!showHome ? { backgroundImage: "url('/game_view_background.png')" } : undefined}
     >
       {!showHome && (
         <button
           onClick={handleGoHome}
-          className="absolute left-4 top-4 rounded-lg border border-gray-700 bg-gray-900/80 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
+          className="absolute left-3 top-3 rounded-lg border border-gray-700 bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800 sm:left-4 sm:top-4 sm:px-4 sm:py-2 sm:text-sm"
         >
           ← Home
         </button>
       )}
 
-      <div className="absolute right-4 top-4">
+      <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
         <UserBadge
           user={user}
           onLoginClick={() => setAuthOpen(true)}
@@ -77,7 +77,7 @@ export default function Home() {
         </div>
 
         {showHome && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/60 px-10 py-8 z-10">
+          <div className="fixed inset-0 flex items-start justify-center overflow-y-auto overscroll-contain bg-black/60 px-4 pt-16 pb-8 z-10 lg:items-center lg:px-10 lg:py-8">
             <HomeScreen onPlay={handlePlay} refreshKey={scoreboardKey} />
           </div>
         )}
