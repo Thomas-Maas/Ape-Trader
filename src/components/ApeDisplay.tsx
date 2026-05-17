@@ -79,6 +79,6 @@ export default function ApeDisplay({ gameState, realizedPnL, unrealizedPnL, fina
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={`/ape/${displayImage}`} alt="ape" className="w-full object-contain" />
+    <img src={`/ape/${displayImage}`} alt="ape" className="aspect-square w-full object-contain" />
   );
 }

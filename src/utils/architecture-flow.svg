@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1000" font-family="-apple-system, Segoe UI, Roboto, sans-serif">
+  <defs>
+    <marker id="arrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e3a8a"/>
+    </marker>
+    <marker id="arrowL" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M10,0 L0,5 L10,10 z" fill="#166534"/>
+    </marker>
+    <marker id="arrowDb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9a3412"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="1000" fill="#f8fafc"/>
+
+  <text x="640" y="44" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">Ape Trader — Runtime Sequence (one round)</text>
+  <text x="640" y="68" text-anchor="middle" font-size="13" fill="#475569">Server-authoritative timing &amp; scoring; client renders only what the server has revealed.</text>
+
+  <!-- Swimlanes -->
+  <g font-size="13" font-weight="700">
+    <rect x="60" y="90" width="220" height="44" rx="8" fill="#e0e7ff" stroke="#6366f1"/>
+    <text x="170" y="118" text-anchor="middle" fill="#3730a3">Browser (React UI)</text>
+
+    <rect x="320" y="90" width="320" height="44" rx="8" fill="#dcfce7" stroke="#22c55e"/>
+    <text x="480" y="118" text-anchor="middle" fill="#166534">Next.js Route Handlers</text>
+
+    <rect x="680" y="90" width="260" height="44" rx="8" fill="#ffedd5" stroke="#f97316"/>
+    <text x="810" y="118" text-anchor="middle" fill="#9a3412">PostgreSQL</text>
+
+    <rect x="980" y="90" width="240" height="44" rx="8" fill="#ede9fe" stroke="#7c3aed"/>
+    <text x="1100" y="118" text-anchor="middle" fill="#5b21b6">Kraken OHLC API</text>
+  </g>
+
+  <!-- Vertical lifelines -->
+  <line x1="170" y1="140" x2="170" y2="960" stroke="#94a3b8" stroke-dasharray="4,4"/>
+  <line x1="480" y1="140" x2="480" y2="960" stroke="#94a3b8" stroke-dasharray="4,4"/>
+  <line x1="810" y1="140" x2="810" y2="960" stroke="#94a3b8" stroke-dasharray="4,4"/>
+  <line x1="1100" y1="140" x2="1100" y2="960" stroke="#94a3b8" stroke-dasharray="4,4"/>
+
+  <!-- Step 1: load page / session check -->
+  <text x="80" y="170" font-size="12" font-weight="700" fill="#0f172a">1) Page load</text>
+  <line x1="170" y1="190" x2="480" y2="190" stroke="#1e3a8a" stroke-width="2" marker-end="url(#arrowR)"/>
+  <text x="325" y="184" text-anchor="middle" font-size="11" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">GET /api/auth/me</text>
+  <line x1="480" y1="210" x2="810" y2="210" stroke="#9a3412" stroke-width="2" marker-end="url(#arrowDb)"/>
+  <text x="645" y="204" text-anchor="middle" font-size="11" fill="#9a3412" font-family="ui-monospace, Menlo, Consolas, monospace">SELECT users WHERE id = $1</text>
+  <line x1="480" y1="232" x2="170" y2="232" stroke="#166534" stroke-width="2" marker-end="url(#arrowL)"/>
+  <text x="325" y="226" text-anchor="middle" font-size="11" fill="#166534">{ user: { username, highscore } | null }</text>
+
+  <!-- Step 2: register / login -->
+  <text x="80" y="270" font-size="12" font-weight="700" fill="#0f172a">2) Auth (optional)</text>
+  <line x1="170" y1="290" x2="480" y2="290" stroke="#1e3a8a" stroke-width="2" marker-end="url(#arrowR)"/>
+  <text x="325" y="284" text-anchor="middle" font-size="11" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">POST /api/auth/{login|register}</text>
+  <line x1="480" y1="310" x2="810" y2="310" stroke="#9a3412" stroke-width="2" marker-end="url(#arrowDb)"/>
+  <text x="645" y="304" text-anchor="middle" font-size="11" fill="#9a3412" font-family="ui-monospace, Menlo, Consolas, monospace">bcrypt verify / INSERT user</text>
+  <line x1="480" y1="332" x2="170" y2="332" stroke="#166534" stroke-width="2" marker-end="url(#arrowL)"/>
+  <text x="325" y="326" text-anchor="middle" font-size="11" fill="#166534">Set-Cookie: session=&lt;JWT&gt; (HttpOnly, 7d)</text>
+
+  <!-- Step 3: start -->
+  <text x="80" y="370" font-size="12" font-weight="700" fill="#0f172a">3) Start round</text>
+  <line x1="170" y1="390" x2="480" y2="390" stroke="#1e3a8a" stroke-width="2" marker-end="url(#arrowR)"/>
+  <text x="325" y="384" text-anchor="middle" font-size="11" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">POST /api/game/start</text>
+  <line x1="480" y1="410" x2="1100" y2="410" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrowDb)"/>
+  <text x="790" y="404" text-anchor="middle" font-size="11" fill="#5b21b6" font-family="ui-monospace, Menlo, Consolas, monospace">GET /0/public/OHLC?pair=XBTUSD&amp;interval=1</text>
+  <line x1="1100" y1="432" x2="480" y2="432" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrowL)" stroke-dasharray="6,3"/>
+  <text x="790" y="426" text-anchor="middle" font-size="11" fill="#5b21b6">~720 BTC candles (fallback to local JSON on failure)</text>
+  <line x1="480" y1="454" x2="810" y2="454" stroke="#9a3412" stroke-width="2" marker-end="url(#arrowDb)"/>
+  <text x="645" y="448" text-anchor="middle" font-size="11" fill="#9a3412" font-family="ui-monospace, Menlo, Consolas, monospace">INSERT game_sessions (candles JSONB, expires_at)</text>
+  <line x1="480" y1="476" x2="170" y2="476" stroke="#166534" stroke-width="2" marker-end="url(#arrowL)"/>
+  <text x="325" y="470" text-anchor="middle" font-size="11" fill="#166534">{ sessionId, candles[0..60) }</text>
+
+  <!-- Step 4: drip loop -->
+  <rect x="60" y="500" width="1180" height="170" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="80" y="522" font-size="12" font-weight="700" fill="#0f172a">4) Drip loop  ·  every 500 ms for GAME_DURATION_S (30 s)</text>
+
+  <line x1="170" y1="548" x2="480" y2="548" stroke="#1e3a8a" stroke-width="2" marker-end="url(#arrowR)"/>
+  <text x="325" y="542" text-anchor="middle" font-size="11" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">GET /api/game/candle?sessionId=...</text>
+  <line x1="480" y1="568" x2="810" y2="568" stroke="#9a3412" stroke-width="2" marker-end="url(#arrowDb)"/>
+  <text x="645" y="562" text-anchor="middle" font-size="11" fill="#9a3412" font-family="ui-monospace, Menlo, Consolas, monospace">SELECT candles, started_at, expires_at</text>
+  <line x1="480" y1="590" x2="170" y2="590" stroke="#166534" stroke-width="2" marker-end="url(#arrowL)"/>
+  <text x="325" y="584" text-anchor="middle" font-size="11" fill="#166534">{ candle, index } based on time-elapsed gate</text>
+
+  <text x="80" y="618" font-size="11" fill="#64748b">On user click LONG / SHORT / CLOSE:</text>
+  <line x1="170" y1="638" x2="480" y2="638" stroke="#1e3a8a" stroke-width="2" marker-end="url(#arrowR)"/>
+  <text x="325" y="632" text-anchor="middle" font-size="11" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">POST /api/game/action { action, candleIndex }</text>
+  <line x1="480" y1="658" x2="810" y2="658" stroke="#9a3412" stroke-width="2" marker-end="url(#arrowDb)"/>
+  <text x="645" y="652" text-anchor="middle" font-size="11" fill="#9a3412" font-family="ui-monospace, Menlo, Consolas, monospace">UPDATE game_sessions SET actions = $1 (validated)</text>
+
+  <!-- Step 5: end -->
+  <text x="80" y="710" font-size="12" font-weight="700" fill="#0f172a">5) End round (timer hits 0)</text>
+  <line x1="170" y1="730" x2="480" y2="730" stroke="#1e3a8a" stroke-width="2" marker-end="url(#arrowR)"/>
+  <text x="325" y="724" text-anchor="middle" font-size="11" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">POST /api/game/end { sessionId }</text>
+
+  <rect x="500" y="744" width="280" height="100" rx="8" fill="#f1f5f9" stroke="#94a3b8"/>
+  <text x="640" y="764" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">computeScore(candles, actions)</text>
+  <text x="640" y="784" text-anchor="middle" font-size="11" fill="#475569">Replays trades server-side</text>
+  <text x="640" y="800" text-anchor="middle" font-size="11" fill="#475569">Auto-closes open position at</text>
+  <text x="640" y="816" text-anchor="middle" font-size="11" fill="#475569">final visible candle</text>
+  <text x="640" y="836" text-anchor="middle" font-size="11" fill="#475569">→ realized PnL in USD</text>
+
+  <line x1="480" y1="864" x2="810" y2="864" stroke="#9a3412" stroke-width="2" marker-end="url(#arrowDb)"/>
+  <text x="645" y="858" text-anchor="middle" font-size="11" fill="#9a3412" font-family="ui-monospace, Menlo, Consolas, monospace">UPDATE users SET highscore = GREATEST(highscore, $1)</text>
+  <line x1="480" y1="886" x2="170" y2="886" stroke="#166534" stroke-width="2" marker-end="url(#arrowL)"/>
+  <text x="325" y="880" text-anchor="middle" font-size="11" fill="#166534">{ score, highscore }</text>
+
+  <!-- Step 6: scoreboard -->
+  <text x="80" y="918" font-size="12" font-weight="700" fill="#0f172a">6) Scoreboard refresh</text>
+  <line x1="170" y1="938" x2="480" y2="938" stroke="#1e3a8a" stroke-width="2" marker-end="url(#arrowR)"/>
+  <text x="325" y="932" text-anchor="middle" font-size="11" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">GET /api/scoreboard</text>
+  <line x1="480" y1="958" x2="170" y2="958" stroke="#166534" stroke-width="2" marker-end="url(#arrowL)"/>
+  <text x="325" y="952" text-anchor="middle" font-size="11" fill="#166534">Top 100 { username, highscore }</text>
+
+  <!-- Side note -->
+  <rect x="980" y="500" width="260" height="170" rx="8" fill="#fef9c3" stroke="#ca8a04"/>
+  <text x="1000" y="524" font-size="12" font-weight="700" fill="#854d0e">Anti-cheat (server-side)</text>
+  <text x="1000" y="546" font-size="11" fill="#475569">• Time gate: candleIndex must</text>
+  <text x="1000" y="562" font-size="11" fill="#475569">  match elapsed wall-clock since</text>
+  <text x="1000" y="578" font-size="11" fill="#475569">  started_at + drip cadence.</text>
+  <text x="1000" y="600" font-size="11" fill="#475569">• Action legality (CLOSE needs</text>
+  <text x="1000" y="616" font-size="11" fill="#475569">  open position).</text>
+  <text x="1000" y="638" font-size="11" fill="#475569">• Score is computed from stored</text>
+  <text x="1000" y="654" font-size="11" fill="#475569">  candles + actions, never from</text>
+  <text x="1000" y="670" font-size="11" fill="#475569">  client-submitted PnL.</text>
+
+  <!-- Guest note -->
+  <rect x="980" y="700" width="260" height="120" rx="8" fill="#eff6ff" stroke="#3b82f6"/>
+  <text x="1000" y="724" font-size="12" font-weight="700" fill="#1e3a8a">Guest mode (no login)</text>
+  <text x="1000" y="746" font-size="11" fill="#475569">/api/game/start returns the full</text>
+  <text x="1000" y="762" font-size="11" fill="#475569">candle buffer; client drips locally,</text>
+  <text x="1000" y="778" font-size="11" fill="#475569">no DB session, score not saved.</text>
+  <text x="1000" y="800" font-size="11" fill="#475569">Lets visitors try the game before</text>
+  <text x="1000" y="816" font-size="11" fill="#475569">creating an account.</text>
+</svg>

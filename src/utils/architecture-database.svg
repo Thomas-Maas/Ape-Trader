@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 720" font-family="-apple-system, Segoe UI, Roboto, sans-serif">
+  <defs>
+    <marker id="rel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0f172a"/>
+    </marker>
+  </defs>
+
+  <rect width="1100" height="720" fill="#f8fafc"/>
+
+  <text x="550" y="44" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">Ape Trader — Database Schema</text>
+  <text x="550" y="68" text-anchor="middle" font-size="13" fill="#475569">PostgreSQL  ·  accessed via node-postgres (pg) connection pool  ·  DATABASE_URL only</text>
+
+  <!-- users table -->
+  <g>
+    <rect x="80" y="120" width="380" height="280" rx="10" fill="#ffffff" stroke="#0f172a" stroke-width="1.5"/>
+    <rect x="80" y="120" width="380" height="44" rx="10" fill="#0f172a"/>
+    <rect x="80" y="146" width="380" height="18" fill="#0f172a"/>
+    <text x="270" y="149" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">users</text>
+
+    <g font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">
+      <text x="100" y="194" fill="#0f172a">id              </text><text x="240" y="194" fill="#1e40af">SERIAL PRIMARY KEY</text>
+      <text x="100" y="224" fill="#0f172a">username        </text><text x="240" y="224" fill="#1e40af">TEXT  UNIQUE NOT NULL</text>
+      <text x="100" y="254" fill="#0f172a">password_hash   </text><text x="240" y="254" fill="#1e40af">TEXT  NOT NULL</text>
+      <text x="100" y="284" fill="#0f172a">highscore       </text><text x="240" y="284" fill="#1e40af">NUMERIC DEFAULT 0</text>
+      <text x="100" y="314" fill="#0f172a">created_at      </text><text x="240" y="314" fill="#1e40af">TIMESTAMPTZ DEFAULT now()</text>
+    </g>
+
+    <line x1="100" y1="334" x2="440" y2="334" stroke="#e2e8f0"/>
+    <text x="100" y="356" font-size="11.5" fill="#475569">• Username 3–32 chars, validated server-side</text>
+    <text x="100" y="374" font-size="11.5" fill="#475569">• Password: bcrypt hash, cost factor 10</text>
+    <text x="100" y="392" font-size="11.5" fill="#475569">• highscore updated with GREATEST(highscore, $score)</text>
+  </g>
+
+  <!-- game_sessions table -->
+  <g>
+    <rect x="600" y="120" width="420" height="380" rx="10" fill="#ffffff" stroke="#0f172a" stroke-width="1.5"/>
+    <rect x="600" y="120" width="420" height="44" rx="10" fill="#0f172a"/>
+    <rect x="600" y="146" width="420" height="18" fill="#0f172a"/>
+    <text x="810" y="149" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">game_sessions</text>
+
+    <g font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">
+      <text x="620" y="194" fill="#0f172a">id            </text><text x="755" y="194" fill="#1e40af">UUID PRIMARY KEY  (default gen_random_uuid())</text>
+      <text x="620" y="224" fill="#0f172a">user_id       </text><text x="755" y="224" fill="#1e40af">INTEGER REFERENCES users(id)</text>
+      <text x="620" y="254" fill="#0f172a">candles       </text><text x="755" y="254" fill="#1e40af">JSONB     NOT NULL</text>
+      <text x="620" y="284" fill="#0f172a">actions       </text><text x="755" y="284" fill="#1e40af">JSONB     DEFAULT '[]'</text>
+      <text x="620" y="314" fill="#0f172a">started_at    </text><text x="755" y="314" fill="#1e40af">TIMESTAMPTZ DEFAULT now()</text>
+      <text x="620" y="344" fill="#0f172a">expires_at    </text><text x="755" y="344" fill="#1e40af">TIMESTAMPTZ NOT NULL</text>
+      <text x="620" y="374" fill="#0f172a">ended_at      </text><text x="755" y="374" fill="#1e40af">TIMESTAMPTZ NULL</text>
+      <text x="620" y="404" fill="#0f172a">score         </text><text x="755" y="404" fill="#1e40af">NUMERIC NULL</text>
+    </g>
+
+    <line x1="620" y1="424" x2="1000" y2="424" stroke="#e2e8f0"/>
+    <text x="620" y="446" font-size="11.5" fill="#475569">• candles[]: snapshot of Kraken OHLC taken at start —</text>
+    <text x="620" y="462" font-size="11.5" fill="#475569">  guarantees server-authoritative replay scoring.</text>
+    <text x="620" y="478" font-size="11.5" fill="#475569">• actions[]: append-only list of {action, candleIndex}.</text>
+    <text x="620" y="494" font-size="11.5" fill="#475569">• Round = (start, action*, end) — ended_at + score set on /end.</text>
+  </g>
+
+  <!-- relationship -->
+  <line x1="460" y1="224" x2="600" y2="224" stroke="#0f172a" stroke-width="2" marker-end="url(#rel)"/>
+  <text x="530" y="216" text-anchor="middle" font-size="12" fill="#0f172a" font-weight="700">1 : N</text>
+  <text x="530" y="240" text-anchor="middle" font-size="10" fill="#64748b">user_id FK</text>
+
+  <!-- JSONB shapes -->
+  <rect x="80" y="430" width="500" height="270" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="4,4"/>
+  <text x="100" y="456" font-size="13" font-weight="700" fill="#0f172a">JSONB payload shapes (TypeScript)</text>
+
+  <text x="100" y="486" font-size="12" font-weight="700" fill="#475569" font-family="ui-monospace, Menlo, Consolas, monospace">candles : Candle[]</text>
+  <rect x="100" y="494" width="460" height="78" rx="6" fill="#0f172a"/>
+  <text x="110" y="514" font-size="11.5" fill="#67e8f9" font-family="ui-monospace, Menlo, Consolas, monospace">type Candle = {</text>
+  <text x="110" y="530" font-size="11.5" fill="#e2e8f0" font-family="ui-monospace, Menlo, Consolas, monospace">  time: number;   // ms epoch</text>
+  <text x="110" y="546" font-size="11.5" fill="#e2e8f0" font-family="ui-monospace, Menlo, Consolas, monospace">  open: number; high: number; low: number; close: number;</text>
+  <text x="110" y="562" font-size="11.5" fill="#67e8f9" font-family="ui-monospace, Menlo, Consolas, monospace">}</text>
+
+  <text x="100" y="596" font-size="12" font-weight="700" fill="#475569" font-family="ui-monospace, Menlo, Consolas, monospace">actions : GameAction[]</text>
+  <rect x="100" y="604" width="460" height="78" rx="6" fill="#0f172a"/>
+  <text x="110" y="624" font-size="11.5" fill="#67e8f9" font-family="ui-monospace, Menlo, Consolas, monospace">type GameAction = {</text>
+  <text x="110" y="640" font-size="11.5" fill="#e2e8f0" font-family="ui-monospace, Menlo, Consolas, monospace">  action: "LONG" | "SHORT" | "CLOSE";</text>
+  <text x="110" y="656" font-size="11.5" fill="#e2e8f0" font-family="ui-monospace, Menlo, Consolas, monospace">  candleIndex: number;   // index into candles[]</text>
+  <text x="110" y="672" font-size="11.5" fill="#67e8f9" font-family="ui-monospace, Menlo, Consolas, monospace">}</text>
+
+  <!-- query patterns -->
+  <rect x="600" y="520" width="420" height="180" rx="10" fill="#fef3c7" stroke="#d97706"/>
+  <text x="620" y="546" font-size="13" font-weight="700" fill="#92400e">Hot query patterns</text>
+  <g font-size="11.5" font-family="ui-monospace, Menlo, Consolas, monospace" fill="#1e293b">
+    <text x="620" y="572">SELECT … FROM game_sessions WHERE id = $1</text>
+    <text x="620" y="592">UPDATE game_sessions SET actions = $1 WHERE id = $2</text>
+    <text x="620" y="612">UPDATE users SET highscore = GREATEST(highscore, $1)</text>
+    <text x="620" y="632">SELECT username, highscore FROM users</text>
+    <text x="620" y="652">  ORDER BY highscore DESC LIMIT 100</text>
+  </g>
+  <text x="620" y="682" font-size="11" fill="#92400e">All queries are parameterized — no string concatenation.</text>
+</svg>
