@@ -83,9 +83,9 @@ export default function GameView({ ref, onGameEnd }: Props) {
 
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:gap-6">
-      {/* Left: big ape + controls + start button (flattened on mobile via `contents`) */}
-      <div className="contents lg:flex lg:w-2/5 lg:shrink-0 lg:flex-col lg:gap-4">
-        <div className="order-1 mx-auto w-1/2 max-w-50 rounded-xl border border-gray-700 bg-gray-900/95 p-3 shadow-2xl lg:order-0 lg:mx-0 lg:w-auto lg:max-w-none lg:p-4">
+      {/* Desktop-only: left column (Ape + Controls + Start) */}
+      <div className="hidden lg:flex lg:w-2/5 lg:shrink-0 lg:flex-col lg:gap-4">
+        <div className="rounded-xl border border-gray-700 bg-gray-900/95 p-4 shadow-2xl">
           <ApeDisplay
             gameState={apeGameState}
             realizedPnL={apePnL.realized}
@@ -94,26 +94,35 @@ export default function GameView({ ref, onGameEnd }: Props) {
             actionTick={actionTick}
           />
         </div>
-        <div className="contents lg:block lg:rounded-xl lg:border lg:border-gray-700 lg:bg-gray-900/95 lg:p-4 lg:shadow-2xl">
-          <div className="order-5 rounded-xl border border-gray-700 bg-gray-900/95 p-3 shadow-2xl lg:order-0 lg:contents lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
-            <TradeControls
-              position={position}
-              canOpen={canOpen}
-              onOpen={(type) => gameWindowRef.current?.openPosition(type)}
-              onClose={() => gameWindowRef.current?.closePosition()}
-            />
-          </div>
+        <div className="rounded-xl border border-gray-700 bg-gray-900/95 p-4 shadow-2xl">
+          <TradeControls
+            position={position}
+            canOpen={canOpen}
+            onOpen={(type) => gameWindowRef.current?.openPosition(type)}
+            onClose={() => gameWindowRef.current?.closePosition()}
+          />
           <button
             onClick={handleStart}
-            className="order-6 w-full rounded-lg bg-yellow-500 px-6 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-400 lg:order-0 lg:mt-3 lg:py-2 lg:text-base"
+            className="mt-3 w-full rounded-lg bg-yellow-500 px-6 py-2 font-bold text-black shadow transition hover:bg-yellow-400"
           >
             {hasStarted ? "Play Again" : "Start Game"}
           </button>
         </div>
       </div>
 
-      {/* Right: game window (flattened on mobile via `contents`) */}
-      <div className="contents lg:block lg:min-w-0 lg:flex-1">
+      {/* Mobile-only: Ape at top */}
+      <div className="order-1 mx-auto w-1/2 max-w-50 rounded-xl border border-gray-700 bg-gray-900/95 p-3 shadow-2xl lg:hidden">
+        <ApeDisplay
+          gameState={apeGameState}
+          realizedPnL={apePnL.realized}
+          unrealizedPnL={apePnL.unrealized}
+          finalScore={apeFinalScore}
+          actionTick={actionTick}
+        />
+      </div>
+
+      {/* Game window: rendered ONCE — desktop right column, mobile middle slot */}
+      <div className="order-2 min-w-0 lg:order-0 lg:flex-1">
         <GameWindow
           ref={gameWindowRef}
           onGameEnd={handleGameEnd}
@@ -123,6 +132,24 @@ export default function GameView({ ref, onGameEnd }: Props) {
           sessionId={sessionId}
         />
       </div>
+
+      {/* Mobile-only: Long/Short */}
+      <div className="order-3 rounded-xl border border-gray-700 bg-gray-900/95 p-3 shadow-2xl lg:hidden">
+        <TradeControls
+          position={position}
+          canOpen={canOpen}
+          onOpen={(type) => gameWindowRef.current?.openPosition(type)}
+          onClose={() => gameWindowRef.current?.closePosition()}
+        />
+      </div>
+
+      {/* Mobile-only: Start / Play Again */}
+      <button
+        onClick={handleStart}
+        className="order-4 w-full rounded-lg bg-yellow-500 px-6 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-400 lg:hidden"
+      >
+        {hasStarted ? "Play Again" : "Start Game"}
+      </button>
     </div>
   );
 }
