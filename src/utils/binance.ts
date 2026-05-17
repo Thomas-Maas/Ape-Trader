@@ -6,22 +6,36 @@ export type Candle = {
   close: number;
 };
 
-const ENDPOINT =
-  "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=150";
+// Kraken public OHLC — no API key, accessible from Vercel servers
+// interval=1 → 1-minute candles; returns up to 720 candles
+const ENDPOINT = "https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=1";
+
+type KrakenResponse = {
+  error: string[];
+  result: Record<string, [number, string, string, string, string, string, string, number][]>;
+};
 
 export async function fetchBtcCandles(): Promise<Candle[]> {
-  const res = await fetch(ENDPOINT);
+  const res = await fetch(ENDPOINT, { next: { revalidate: 0 } });
   if (!res.ok) {
-    throw new Error(`Binance request failed: ${res.status}`);
+    throw new Error(`Kraken request failed: ${res.status}`);
   }
 
-  const raw = (await res.json()) as unknown[][];
+  const json = (await res.json()) as KrakenResponse;
+  if (json.error?.length > 0) {
+    throw new Error(`Kraken error: ${json.error.join(", ")}`);
+  }
 
+  // result has one pair key + a "last" cursor key; grab the pair
+  const pairKey = Object.keys(json.result).find((k) => k !== "last")!;
+  const raw = json.result[pairKey];
+
+  // Kraken timestamps are in seconds; multiply by 1000 to match Binance ms format
   return raw.map((k) => ({
-    time: k[0] as number,
-    open: parseFloat(k[1] as string),
-    high: parseFloat(k[2] as string),
-    low: parseFloat(k[3] as string),
-    close: parseFloat(k[4] as string),
+    time: k[0] * 1000,
+    open: parseFloat(k[1]),
+    high: parseFloat(k[2]),
+    low: parseFloat(k[3]),
+    close: parseFloat(k[4]),
   }));
 }
