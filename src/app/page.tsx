@@ -73,7 +73,7 @@ export default function Home() {
           }`}
           aria-hidden={showHome}
         >
-          <GameView ref={gameRef} onGameEnd={handleGameEnd} />
+          <GameView ref={gameRef} onGameEnd={handleGameEnd} onNeedAuth={() => setAuthOpen(true)} />
         </div>
 
         {showHome && (

@@ -18,11 +18,12 @@ export type GameViewHandle = {
 type Props = {
   ref?: Ref<GameViewHandle>;
   onGameEnd: (finalScore: number, highscore: number) => void;
+  onNeedAuth: () => void;
 };
 
 type ApeGameState = "IDLE" | "PLAYING" | "GAME_OVER";
 
-export default function GameView({ ref, onGameEnd }: Props) {
+export default function GameView({ ref, onGameEnd, onNeedAuth }: Props) {
   const gameWindowRef = useRef<GameWindowHandle>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -46,12 +47,17 @@ export default function GameView({ ref, onGameEnd }: Props) {
     setPosition(null);
 
     const res = await fetch("/api/game/start", { method: "POST" });
-    if (!res.ok) return;
+    if (!res.ok) {
+      setHasStarted(false);
+      setApeGameState("IDLE");
+      if (res.status === 401) onNeedAuth();
+      return;
+    }
     const data = (await res.json()) as { sessionId: string; candles: unknown[] };
     setSessionId(data.sessionId);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     gameWindowRef.current?.startWithCandles(data.candles as any);
-  }, []);
+  }, [onNeedAuth]);
 
   const handleStop = useCallback(() => {
     setHasStarted(false);
