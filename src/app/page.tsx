@@ -31,22 +31,10 @@ export default function Home() {
   }, []);
 
   const handleGameEnd = useCallback(
-    async (finalScore: number) => {
+    (_finalScore: number, highscore: number) => {
       if (!user) return;
-      try {
-        const res = await fetch("/api/score", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ score: finalScore }),
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { highscore: number };
-          setUser({ username: user.username, highscore: data.highscore });
-          setScoreboardKey((k) => k + 1);
-        }
-      } catch {
-        // best-effort submission, ignore network errors
-      }
+      setUser({ username: user.username, highscore });
+      setScoreboardKey((k) => k + 1);
     },
     [user],
   );

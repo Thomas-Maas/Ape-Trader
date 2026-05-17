@@ -8,7 +8,8 @@ import {
   useState,
   type Ref,
 } from "react";
-import { fetchBtcCandles, type Candle } from "@/utils/binance";
+import type { Candle } from "@/utils/binance";
+import { DRIP_SPEED_MS, GAME_DURATION_S } from "@/lib/gameConfig";
 import CryptoChart from "./CryptoChart";
 import ProfitDisplay from "./ProfitDisplay";
 import TradeControls, {
@@ -16,22 +17,19 @@ import TradeControls, {
   type PositionType,
 } from "./TradeControls";
 
-const DRIP_SPEED_MS = 500;
-const GAME_DURATION_S = 35;
-const INITIAL_VISIBLE = 60;
-
 type GameState = "IDLE" | "PLAYING" | "GAME_OVER";
 
 export type GameWindowHandle = {
-  start: () => void;
+  startWithCandles: (candles: Candle[]) => void;
   stop: () => void;
 };
 
 type Props = {
   ref?: Ref<GameWindowHandle>;
-  onGameEnd: (finalScore: number) => void;
+  onGameEnd: (finalScore: number, highscore: number) => void;
   onAction?: (action: "LONG" | "SHORT" | "CLOSE") => void;
   onPnLUpdate?: (realized: number, unrealized: number) => void;
+  sessionId: string | null;
 };
 
 function pnlFor(position: Position, price: number): number {
@@ -40,24 +38,30 @@ function pnlFor(position: Position, price: number): number {
     : position.entryPrice - price;
 }
 
-export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate }: Props) {
+export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, sessionId }: Props) {
   const [gameState, setGameState] = useState<GameState>("IDLE");
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION_S);
   const [visibleData, setVisibleData] = useState<Candle[]>([]);
   const [position, setPosition] = useState<Position | null>(null);
   const [realizedPnL, setRealizedPnL] = useState(0);
 
-  const queuedData = useRef<Candle[]>([]);
   const loopInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeLeftRef = useRef(GAME_DURATION_S);
   const onGameEndRef = useRef(onGameEnd);
   const onActionRef = useRef(onAction);
   const onPnLUpdateRef = useRef(onPnLUpdate);
-  const closePositionRef = useRef<() => number>(() => 0);
+  const sessionIdRef = useRef(sessionId);
+  const visibleDataRef = useRef(visibleData);
+  const positionRef = useRef(position);
+  const realizedPnLRef = useRef(realizedPnL);
 
   useEffect(() => { onGameEndRef.current = onGameEnd; }, [onGameEnd]);
   useEffect(() => { onActionRef.current = onAction; }, [onAction]);
   useEffect(() => { onPnLUpdateRef.current = onPnLUpdate; }, [onPnLUpdate]);
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+  useEffect(() => { visibleDataRef.current = visibleData; }, [visibleData]);
+  useEffect(() => { positionRef.current = position; }, [position]);
+  useEffect(() => { realizedPnLRef.current = realizedPnL; }, [realizedPnL]);
 
   const currentPrice =
     visibleData.length > 0 ? visibleData[visibleData.length - 1].close : 0;
@@ -76,52 +80,86 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate }: Pr
 
   useEffect(() => clearLoop, [clearLoop]);
 
-  const openPosition = useCallback(
-    (type: PositionType) => {
-      if (visibleData.length === 0) return;
-      const entryPrice = visibleData[visibleData.length - 1].close;
-      setPosition({ type, entryPrice });
-      onActionRef.current?.(type);
-    },
-    [visibleData],
-  );
+  const endGame = useCallback(async () => {
+    clearLoop();
+    setGameState("GAME_OVER");
+    const sid = sessionIdRef.current;
+    if (!sid) return;
+    try {
+      const res = await fetch("/api/game/end", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: sid }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { score: number; highscore: number };
+        onGameEndRef.current(data.score, data.highscore);
+      }
+    } catch {
+      // best-effort
+    }
+  }, [clearLoop]);
 
-  const closePosition = useCallback((): number => {
-    if (!position || visibleData.length === 0) return realizedPnL;
-    const exitPrice = visibleData[visibleData.length - 1].close;
-    const newTotal = realizedPnL + pnlFor(position, exitPrice);
+  const openPosition = useCallback((type: PositionType) => {
+    const data = visibleDataRef.current;
+    if (data.length === 0) return;
+    setPosition({ type, entryPrice: data[data.length - 1].close });
+    onActionRef.current?.(type);
+
+    const sid = sessionIdRef.current;
+    if (sid) {
+      fetch("/api/game/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: sid, action: type, candleIndex: data.length - 1 }),
+      }).catch(() => undefined);
+    }
+  }, []);
+
+  const closePosition = useCallback(() => {
+    const pos = positionRef.current;
+    const data = visibleDataRef.current;
+    if (!pos || data.length === 0) return;
+    const newTotal = realizedPnLRef.current + pnlFor(pos, data[data.length - 1].close);
     setRealizedPnL(newTotal);
     setPosition(null);
     onActionRef.current?.("CLOSE");
-    return newTotal;
-  }, [position, visibleData, realizedPnL]);
 
-  useEffect(() => {
-    closePositionRef.current = closePosition;
-  }, [closePosition]);
+    const sid = sessionIdRef.current;
+    if (sid) {
+      fetch("/api/game/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: sid, action: "CLOSE", candleIndex: data.length - 1 }),
+      }).catch(() => undefined);
+    }
+  }, []);
 
-  const startGame = useCallback(async () => {
+  const startGame = useCallback((candles: Candle[]) => {
     clearLoop();
-    setGameState("IDLE");
     timeLeftRef.current = GAME_DURATION_S;
     setTimeLeft(GAME_DURATION_S);
-    setVisibleData([]);
+    setVisibleData(candles);
     setPosition(null);
     setRealizedPnL(0);
-    queuedData.current = [];
-
-    const candles = await fetchBtcCandles();
-
-    setVisibleData(candles.slice(0, INITIAL_VISIBLE));
-    queuedData.current = candles.slice(INITIAL_VISIBLE);
     setGameState("PLAYING");
 
     const tickSeconds = DRIP_SPEED_MS / 1000;
 
-    loopInterval.current = setInterval(() => {
-      const next = queuedData.current.shift();
-      if (next) {
-        setVisibleData((prev) => [...prev, next]);
+    loopInterval.current = setInterval(async () => {
+      const sid = sessionIdRef.current;
+      if (sid) {
+        try {
+          const res = await fetch(`/api/game/candle?sessionId=${sid}`);
+          if (res.ok) {
+            const data = (await res.json()) as { candle: Candle | null };
+            if (data.candle) {
+              setVisibleData((prev) => [...prev, data.candle!]);
+            }
+          }
+        } catch {
+          // best-effort — chart just won't advance this tick
+        }
       }
 
       const updated = Math.max(0, timeLeftRef.current - tickSeconds);
@@ -129,13 +167,10 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate }: Pr
       setTimeLeft(updated);
 
       if (updated <= 0) {
-        clearLoop();
-        const score = closePositionRef.current();
-        setGameState("GAME_OVER");
-        onGameEndRef.current(score);
+        endGame();
       }
     }, DRIP_SPEED_MS);
-  }, [clearLoop]);
+  }, [clearLoop, endGame]);
 
   const stopGame = useCallback(() => {
     clearLoop();
@@ -146,7 +181,7 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate }: Pr
 
   useImperativeHandle(
     ref,
-    () => ({ start: startGame, stop: stopGame }),
+    () => ({ startWithCandles: startGame, stop: stopGame }),
     [startGame, stopGame],
   );
 

@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 const HAPPY_THRESHOLD = 50;
 const ANGRY_THRESHOLD = -50;
-const CYCLE_MS = 2000;
-const ACTION_MS = 800;
+const CYCLE_MS = 1300;
+const ACTION_MS = 400;
 
 type GameState = "IDLE" | "PLAYING" | "GAME_OVER";
 type Mood = "NEUTRAL" | "HAPPY" | "NEGATIVE" | "ANGRY" | "WON" | "LOST";

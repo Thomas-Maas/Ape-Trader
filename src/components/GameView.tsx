@@ -16,7 +16,7 @@ export type GameViewHandle = {
 
 type Props = {
   ref?: Ref<GameViewHandle>;
-  onGameEnd: (finalScore: number) => void;
+  onGameEnd: (finalScore: number, highscore: number) => void;
 };
 
 type ApeGameState = "IDLE" | "PLAYING" | "GAME_OVER";
@@ -24,6 +24,7 @@ type ApeGameState = "IDLE" | "PLAYING" | "GAME_OVER";
 export default function GameView({ ref, onGameEnd }: Props) {
   const gameWindowRef = useRef<GameWindowHandle>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const [apeGameState, setApeGameState] = useState<ApeGameState>("IDLE");
   const [apePnL, setApePnL] = useState({ realized: 0, unrealized: 0 });
@@ -34,26 +35,33 @@ export default function GameView({ ref, onGameEnd }: Props) {
   } | null>(null);
   const actionIdRef = useRef(0);
 
-  const handleStart = useCallback(() => {
+  const handleStart = useCallback(async () => {
     setHasStarted(true);
     setApeGameState("PLAYING");
     setApePnL({ realized: 0, unrealized: 0 });
     setApeFinalScore(null);
     setActionTick(null);
-    gameWindowRef.current?.start();
+
+    const res = await fetch("/api/game/start", { method: "POST" });
+    if (!res.ok) return;
+    const data = (await res.json()) as { sessionId: string; candles: unknown[] };
+    setSessionId(data.sessionId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    gameWindowRef.current?.startWithCandles(data.candles as any);
   }, []);
 
   const handleStop = useCallback(() => {
     setHasStarted(false);
     setApeGameState("IDLE");
+    setSessionId(null);
     gameWindowRef.current?.stop();
   }, []);
 
   const handleGameEnd = useCallback(
-    (finalScore: number) => {
+    (finalScore: number, highscore: number) => {
       setApeFinalScore(finalScore);
       setApeGameState("GAME_OVER");
-      onGameEnd(finalScore);
+      onGameEnd(finalScore, highscore);
     },
     [onGameEnd],
   );
@@ -86,6 +94,7 @@ export default function GameView({ ref, onGameEnd }: Props) {
             onGameEnd={handleGameEnd}
             onAction={handleAction}
             onPnLUpdate={handlePnLUpdate}
+            sessionId={sessionId}
           />
         </div>
       </div>
