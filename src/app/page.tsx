@@ -40,6 +40,7 @@ export default function Home() {
   );
 
   const handleLogout = useCallback(async () => {
+    gameRef.current?.stop();
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
   }, []);

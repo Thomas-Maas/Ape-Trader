@@ -17,7 +17,7 @@ import type { Position, PositionType } from "./TradeControls";
 type GameState = "IDLE" | "PLAYING" | "GAME_OVER";
 
 export type GameWindowHandle = {
-  startWithCandles: (candles: Candle[]) => void;
+  startWithCandles: (candles: Candle[], allCandles?: Candle[]) => void;
   stop: () => void;
   openPosition: (type: PositionType) => void;
   closePosition: () => void;
@@ -56,6 +56,9 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, onPo
   const realizedPnLRef = useRef(realizedPnL);
   // Tracks the server-authoritative candle index of the last visible candle
   const currentCandleIndexRef = useRef<number>(-1);
+  // Guest-mode: full candle buffer and next index to drip
+  const allCandlesRef = useRef<Candle[]>([]);
+  const guestNextIndexRef = useRef<number>(0);
 
   useEffect(() => { onGameEndRef.current = onGameEnd; }, [onGameEnd]);
   useEffect(() => { onActionRef.current = onAction; }, [onAction]);
@@ -88,7 +91,11 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, onPo
     clearLoop();
     setGameState("GAME_OVER");
     const sid = sessionIdRef.current;
-    if (!sid) return;
+    // Guest or logged-out fallback: use client-tracked score
+    if (!sid) {
+      onGameEndRef.current(realizedPnLRef.current, 0);
+      return;
+    }
     try {
       const res = await fetch("/api/game/end", {
         method: "POST",
@@ -100,9 +107,12 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, onPo
         setPosition(null);
         setRealizedPnL(data.score);
         onGameEndRef.current(data.score, data.highscore);
+      } else {
+        // Logged out mid-game or server error — fall back to client score
+        onGameEndRef.current(realizedPnLRef.current, 0);
       }
     } catch {
-      // best-effort
+      onGameEndRef.current(realizedPnLRef.current, 0);
     }
   }, [clearLoop]);
 
@@ -141,14 +151,15 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, onPo
     }
   }, []);
 
-  const startGame = useCallback((candles: Candle[]) => {
+  const startGame = useCallback((candles: Candle[], allCandles?: Candle[]) => {
     clearLoop();
+    allCandlesRef.current = allCandles ?? [];
+    guestNextIndexRef.current = candles.length;
     timeLeftRef.current = GAME_DURATION_S;
     setTimeLeft(GAME_DURATION_S);
     setVisibleData(candles);
     setPosition(null);
     setRealizedPnL(0);
-    // Last candle the server sent is at index candles.length - 1
     currentCandleIndexRef.current = candles.length - 1;
     setGameState("PLAYING");
 
@@ -168,6 +179,15 @@ export default function GameWindow({ ref, onGameEnd, onAction, onPnLUpdate, onPo
           }
         } catch {
           // best-effort — chart just won't advance this tick
+        }
+      } else {
+        // Guest mode: drip from local buffer
+        const nextIdx = guestNextIndexRef.current;
+        const all = allCandlesRef.current;
+        if (nextIdx < all.length) {
+          currentCandleIndexRef.current = nextIdx;
+          setVisibleData((prev) => [...prev, all[nextIdx]]);
+          guestNextIndexRef.current = nextIdx + 1;
         }
       }
 

@@ -71,10 +71,10 @@ export default function GameView({ ref, onGameEnd, onNeedAuth }: Props) {
       }
       return;
     }
-    const data = (await res.json()) as { sessionId: string; candles: unknown[] };
+    const data = (await res.json()) as { sessionId: string | null; candles: unknown[]; allCandles?: unknown[] };
     setSessionId(data.sessionId);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    gameWindowRef.current?.startWithCandles(data.candles as any);
+    gameWindowRef.current?.startWithCandles(data.candles as any, data.allCandles as any);
   }, [onNeedAuth]);
 
   const handleStop = useCallback(() => {
