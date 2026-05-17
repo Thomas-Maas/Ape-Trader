@@ -36,9 +36,11 @@ export default function GameView({ ref, onGameEnd, onNeedAuth }: Props) {
     id: number;
   } | null>(null);
   const [position, setPosition] = useState<Position | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
   const actionIdRef = useRef(0);
 
   const handleStart = useCallback(async () => {
+    setStartError(null);
     setHasStarted(true);
     setApeGameState("PLAYING");
     setApePnL({ realized: 0, unrealized: 0 });
@@ -46,11 +48,27 @@ export default function GameView({ ref, onGameEnd, onNeedAuth }: Props) {
     setActionTick(null);
     setPosition(null);
 
-    const res = await fetch("/api/game/start", { method: "POST" });
+    let res: Response;
+    try {
+      res = await fetch("/api/game/start", { method: "POST" });
+    } catch (err) {
+      setHasStarted(false);
+      setApeGameState("IDLE");
+      setStartError(`Network error: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+
     if (!res.ok) {
       setHasStarted(false);
       setApeGameState("IDLE");
-      if (res.status === 401) onNeedAuth();
+      if (res.status === 401) {
+        setStartError("Log in to play.");
+        onNeedAuth();
+      } else {
+        let detail = "";
+        try { detail = (await res.json() as { error?: string }).error ?? ""; } catch { /* ignore */ }
+        setStartError(`Server error ${res.status}${detail ? `: ${detail}` : ""}`);
+      }
       return;
     }
     const data = (await res.json()) as { sessionId: string; candles: unknown[] };
@@ -113,6 +131,7 @@ export default function GameView({ ref, onGameEnd, onNeedAuth }: Props) {
           >
             {hasStarted ? "Play Again" : "Start Game"}
           </button>
+          {startError && <p className="mt-2 text-center text-xs text-red-400">{startError}</p>}
         </div>
       </div>
 
@@ -156,6 +175,9 @@ export default function GameView({ ref, onGameEnd, onNeedAuth }: Props) {
       >
         {hasStarted ? "Play Again" : "Start Game"}
       </button>
+      {startError && (
+        <p className="order-5 text-center text-sm text-red-400 lg:hidden">{startError}</p>
+      )}
     </div>
   );
 }
